@@ -308,6 +308,8 @@ export function Questionnaire({
         } else {
           setSubmitError(error.message);
         }
+      } else if (error instanceof TypeError) {
+        setSubmitError("無法連線至伺服器，請確認網路連線或聯絡管理員確認服務是否已部署");
       } else {
         setSubmitError("發生錯誤，請稍後再試");
       }
