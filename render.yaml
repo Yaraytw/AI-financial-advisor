@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ai-financial-advisor-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: APP_DATABASE_URL
+        value: sqlite:///./dev.db
+      - key: APP_CORS_ALLOW_ORIGINS
+        sync: false
