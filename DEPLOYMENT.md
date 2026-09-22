@@ -26,8 +26,9 @@
 
 ## 2. 部署前端（Vercel）
 
-repo 根目錄已加上 `vercel.json`，Vercel 會自動用 `cd frontend && npm install && npm run build`
-建置，輸出目錄是 `frontend/dist`，不需要額外手動設定 Root Directory。
+在 Vercel 專案的 Settings → General → Root Directory 設為 `frontend`（這個 repo 是 monorepo，
+`frontend/` 才是要建置的 Vite 專案；Root Directory 設對之後 Vercel 會自動偵測 Vite，
+Build Command/Output Directory 用預設值即可，不需要另外加 `vercel.json`）。
 
 在 Vercel 專案的 Settings → Environment Variables 加入：
 
