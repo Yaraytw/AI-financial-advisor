@@ -125,6 +125,7 @@ const fieldStyle: React.CSSProperties = {
   flexDirection: "column",
   gap: "0.25rem",
   marginBottom: "1rem",
+  textAlign: "left",
 };
 
 const labelStyle: React.CSSProperties = {
@@ -203,6 +204,7 @@ export function Questionnaire({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [slowSubmit, setSlowSubmit] = useState(false);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -295,6 +297,8 @@ export function Questionnaire({
 
     setSubmitting(true);
     setSubmitError(null);
+    setSlowSubmit(false);
+    const slowTimer = setTimeout(() => setSlowSubmit(true), 4000);
     try {
       const response = await api.post<AssessmentResponse>("/assessments", request);
       onComplete(response);
@@ -314,7 +318,9 @@ export function Questionnaire({
         setSubmitError("發生錯誤，請稍後再試");
       }
     } finally {
+      clearTimeout(slowTimer);
       setSubmitting(false);
+      setSlowSubmit(false);
     }
   }
 
@@ -535,6 +541,12 @@ export function Questionnaire({
       {submitError && (
         <div style={{ ...errorStyle, marginBottom: "1rem", whiteSpace: "pre-wrap" }}>
           {submitError}
+        </div>
+      )}
+
+      {slowSubmit && (
+        <div style={{ ...errorStyle, color: "#666", marginBottom: "1rem" }}>
+          伺服器可能因閒置而正在喚醒中，請再稍候約 30-60 秒⋯⋯
         </div>
       )}
 
