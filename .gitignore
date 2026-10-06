@@ -224,3 +224,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# MPT assignment: licensed TEJ data and derived outputs stay local
+assignments/mpt/data/
+assignments/mpt/output/*
+!assignments/mpt/output/.gitkeep
