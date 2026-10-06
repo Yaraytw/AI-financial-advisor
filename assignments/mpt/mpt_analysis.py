@@ -146,16 +146,23 @@ def compute_returns(prices: pd.DataFrame) -> pd.DataFrame:
     return returns
 
 
-def summary_stats(returns: pd.DataFrame) -> pd.DataFrame:
+def summary_stats(returns: pd.DataFrame, prices: pd.DataFrame) -> pd.DataFrame:
     avg_daily = returns.mean()
     std_daily = returns.std()
     annualized_return = (1 + avg_daily) ** TRADING_DAYS_PER_YEAR - 1
     annualized_vol = std_daily * np.sqrt(TRADING_DAYS_PER_YEAR)
 
+    # Course formula: AR = (1 + R)^(1/y) - 1 with R the cumulative return, y in calendar years.
+    cumulative = (1 + returns).prod() - 1
+    years = (returns.index[-1] - prices.index[0]).days / 365.25
+    cagr = (1 + cumulative) ** (1 / years) - 1
+
     stats = pd.DataFrame(
         {
             "Average Daily Return": avg_daily,
             "Annualized Return": annualized_return,
+            "Cumulative Return": cumulative,
+            "Annualized Return (CAGR)": cagr,
             "Daily Std Dev": std_daily,
             "Annualized Volatility": annualized_vol,
         }
@@ -203,7 +210,7 @@ def main() -> None:
     returns = compute_returns(prices)
     returns.to_csv(out_dir / "return_matrix.csv")
 
-    stats = summary_stats(returns)
+    stats = summary_stats(returns, prices)
     stats.to_csv(out_dir / "summary_stats.csv")
 
     corr = returns.corr()
