@@ -163,6 +163,14 @@ def summary_stats(returns: pd.DataFrame) -> pd.DataFrame:
     return stats
 
 
+def ranked_pairs(corr: pd.DataFrame) -> pd.Series:
+    """Unique asset pairs sorted from highest to lowest correlation."""
+    mask = np.triu(np.ones(corr.shape, dtype=bool), k=1)
+    pairs = corr.where(mask).stack().dropna()
+    pairs.index = [f"{a} - {b}" for a, b in pairs.index]
+    return pairs.sort_values(ascending=False)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", type=Path, nargs="+", default=None, help="Path to a local CSV of Adjusted Close prices instead of downloading")
@@ -213,6 +221,12 @@ def main() -> None:
     print(stats)
     print("\n=== Correlation Matrix ===")
     print(corr)
+    pairs = ranked_pairs(corr)
+    pairs.to_csv(out_dir / "correlation_pairs_ranked.csv", header=["correlation"])
+    print("\n=== Highest correlations (Q1) ===")
+    print(pairs.head(5))
+    print("\n=== Lowest / negative correlations (Q2, Q3) ===")
+    print(pairs.tail(5).sort_values())
     print("\n=== Covariance Matrix (daily) ===")
     print(cov)
     print(f"\nFull results written to {out_dir}/")
