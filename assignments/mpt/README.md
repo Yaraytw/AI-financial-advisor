@@ -1,73 +1,75 @@
-# Robo-Advisor Assignment 2 — Part I & II
+# Robo-Advisor Assignment 2 — Modern Portfolio Theory
 
-Modern Portfolio Theory: data collection and return/risk analysis, kept
-separate from the `backend/`/`frontend/` product code since this is
-coursework, not a product feature.
+Opportunity set and Minimum Variance Portfolio (MVP) from real market data.
+Kept separate from `backend/`/`frontend/` since this is coursework, not a
+product feature.
 
-## Assets selected (8, diversified by asset class and geography)
+## Assets (8, Taiwan-listed, daily adjusted close from TEJ)
 
-| Ticker       | Description                                   |
-|--------------|------------------------------------------------|
-| SPY          | US Large-Cap Equity ETF (S&P 500)              |
-| VWO          | Emerging Markets Equity ETF                    |
-| 0050.TW      | Taiwan Top 50 Equity ETF (Yuanta/P-shares)     |
-| AGG          | US Aggregate Bond ETF                          |
-| 00679B.TWO   | Taiwan-listed 20+ Year US Treasury Bond ETF    |
-| GLD          | Gold ETF                                       |
-| VNQ          | US REIT ETF                                    |
-| DBC          | Broad Commodity ETF                            |
+| Code   | Description                                  |
+|--------|----------------------------------------------|
+| 0050   | Yuanta Taiwan Top 50 ETF (Taiwan large-cap)  |
+| 0056   | Yuanta Taiwan High Dividend ETF              |
+| 00646  | Yuanta S&P 500 ETF                           |
+| 00679B | Yuanta 20+ Year US Treasury Bond ETF         |
+| 00720B | Yuanta Investment-Grade Corporate Bond ETF   |
+| 00635U | Yuanta S&P GSCI Gold ETF                     |
+| 1216   | Uni-President (defensive consumer stock)     |
+| 2412   | Chunghwa Telecom (defensive telecom stock)   |
 
-Rationale: spans equities (US, Taiwan, emerging markets), bonds (US and a
-Taiwan-listed long-duration US treasury ETF for currency/market variety),
-gold, real estate, and broad commodities, so the opportunity set in a later
-assignment part has genuinely different risk/return profiles to combine.
+Period: 2019-01-02 to 2026-10-05 (1,883 trading days). Price field: the
+`收盤價(元)` column of TEJ's 調整股價(日)-除權息調整 table (adjusted for
+dividends and splits).
 
-Data period: daily Adjusted Close, 2019-01-01 through latest available
-(5+ years).
+TEJ data is licensed for campus use, so `data/` and `output/` are gitignored
+and nothing derived from raw prices is committed.
 
-## Known limitation: this sandbox can't reach Yahoo Finance
+## Setup
 
-This environment's outbound network policy blocks `query1/2.finance.yahoo.com`
-(the host `yfinance` calls), so `mpt_analysis.py` could not actually be run
-against live data here — only verified against synthetic data to confirm the
-pipeline logic (cleaning, returns, stats, correlation/covariance) is correct.
-No real numbers have been fabricated or committed.
+```
+cd assignments/mpt
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-To produce real results, either:
-1. Run `pip install -r requirements.txt && python mpt_analysis.py` on a
-   machine with normal internet access, or
-2. Supply prices yourself: `python mpt_analysis.py --csv prices.csv`. Either a
-   wide CSV (`Date` column + one column per ticker of Adjusted Close), or a
-   TEJ-style long CSV (one row per security and date, with a date column such
-   as 年月日, a security-code column such as 證券代碼, and a 調整後收盤價 column;
-   use `--price-col` if the price column name differs). UTF-8 and Big5 both work.
+## Part I and II — `mpt_analysis.py`
 
-## What the script does (Part I)
+Put one TEJ `.xlsx` export per security in `data/` (TEJ data explorer ->
+個股查詢 -> pick the security, date range 2019/01/01 to latest), then:
 
-1. Downloads (or loads from CSV) daily Adjusted Close prices for all 8
-   tickers.
-2. Aligns trading dates across the two exchanges (US + Taiwan) and handles
-   missing values: forward/back-fill isolated gaps, then drop any
-   asset/date that still has no data so every column lines up.
-3. Computes daily simple returns and assembles the return matrix.
+```
+python mpt_analysis.py --csv data/*.xlsx
+```
 
-## What the script does (Part II)
+Reads wide CSVs (a `Date` column plus one column per ticker), TEJ long-format
+CSV/xlsx files (one row per security and date), or, with no `--csv`, downloads
+the Yahoo Finance tickers listed in the script. Steps: align dates, forward-fill
+isolated gaps (leading gaps are trimmed, never back-filled), compute daily
+returns and the return matrix, then per-asset average daily return, annualized
+return, cumulative return, CAGR, standard deviation, annualized volatility, plus
+the correlation matrix, daily and annualized covariance matrices, and a ranked
+list of correlation pairs.
 
-For each asset: average daily return, annualized return (compounded, 252
-trading days/year), daily standard deviation, and annualized volatility.
-Also builds the full correlation matrix and covariance matrix (daily and
-annualized) across all 8 assets.
+Annualized return is reported two ways: the mean daily return compounded over
+252 days, and the course formula `(1 + R)^(1/y) - 1` from cumulative return
+(`Annualized Return (CAGR)`). State which one the write-up uses.
 
-Outputs are written to `output/`:
-- `prices_cleaned.csv`
-- `return_matrix.csv`
-- `summary_stats.csv`
-- `correlation_matrix.csv`
-- `covariance_matrix.csv` / `covariance_matrix_annualized.csv`
+## Part III — `mpt_portfolio.py`
 
-## Still needed from the spec
+```
+python mpt_portfolio.py            # 10,000 random portfolios, seed 42
+python mpt_portfolio.py --n 20000 --seed 7
+```
 
-The assignment text we received cuts off after Part II. Parts covering the
-portfolio opportunity set simulation, the Minimum Variance Portfolio
-optimization, and any required deliverables/plots are not in hand yet —
-flagged in the project thread.
+Reads `output/return_matrix.csv` from the previous step. Expected return is
+mean daily return x 252 (so portfolio return is linear in the weights), risk is
+`sqrt(w' Sigma w)` with the annualized covariance matrix.
+
+1. Simulates random long-only portfolios (weights >= 0, sum to 1).
+2. MVP two ways: closed form `w = Sigma^-1 1 / (1' Sigma^-1 1)` (negative
+   weights mean shorting) and the long-only numerical solution (SLSQP).
+3. Long-only efficient frontier (minimum variance for each target return from
+   the MVP up to the best single asset).
+
+Outputs in `output/`: `opportunity_set.png`, `mvp_weights.csv`,
+`mvp_summary.csv`, `efficient_frontier.csv`, `portfolios_simulated.csv`.
