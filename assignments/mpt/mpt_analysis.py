@@ -56,7 +56,8 @@ def download_prices(tickers: list[str], start: str, end: str | None) -> pd.DataF
         data = yf.download(ticker, start=start, end=end, auto_adjust=False, progress=False)
         if data.empty:
             raise RuntimeError(f"No data returned for {ticker}")
-        frames[ticker] = data["Adj Close"]
+        adj = data["Adj Close"]
+        frames[ticker] = adj.iloc[:, 0] if isinstance(adj, pd.DataFrame) else adj
     prices = pd.DataFrame(frames)
     prices.index.name = "Date"
     return prices
@@ -74,14 +75,13 @@ def clean_prices(prices: pd.DataFrame) -> pd.DataFrame:
     - Drop dates where every asset is missing (e.g. exchange holidays unique
       to one market already show up as NaN only for that asset).
     - Forward-fill isolated gaps (an asset not trading on a date the other
-      market was open), then back-fill any remaining leading NaNs.
-    - Drop any asset that is still mostly empty, and drop the small number
-      of rows at the start where an asset hasn't listed yet.
+      market was open); leading NaNs are never back-filled.
+    - Drop the rows at the start where an asset hasn't listed yet, so every
+      asset shares the same common period.
     """
     prices = prices.sort_index()
     prices = prices.dropna(how="all")
-    prices = prices.ffill().bfill()
-    prices = prices.dropna(axis=1, how="any")
+    prices = prices.ffill()
     # Trim to the common period where every asset actually has data.
     prices = prices.dropna(axis=0, how="any")
     return prices
