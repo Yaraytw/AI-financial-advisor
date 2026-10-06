@@ -36,9 +36,11 @@ No real numbers have been fabricated or committed.
 To produce real results, either:
 1. Run `pip install -r requirements.txt && python mpt_analysis.py` on a
    machine with normal internet access, or
-2. Supply prices yourself: `python mpt_analysis.py --csv prices.csv`, where
-   `prices.csv` has a `Date` index column and one column per ticker of
-   Adjusted Close prices.
+2. Supply prices yourself: `python mpt_analysis.py --csv prices.csv`. Either a
+   wide CSV (`Date` column + one column per ticker of Adjusted Close), or a
+   TEJ-style long CSV (one row per security and date, with a date column such
+   as 年月日, a security-code column such as 證券代碼, and a 調整後收盤價 column;
+   use `--price-col` if the price column name differs). UTF-8 and Big5 both work.
 
 ## What the script does (Part I)
 

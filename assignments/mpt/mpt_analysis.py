@@ -69,9 +69,52 @@ def download_prices(tickers: list[str], start: str, end: str | None) -> pd.DataF
     return prices
 
 
-def load_prices_from_csv(path: Path) -> pd.DataFrame:
-    prices = pd.read_csv(path, index_col=0, parse_dates=True)
+def _read_csv_text(path: Path) -> pd.DataFrame:
+    # Taiwan data exports are often Big5 (cp950) instead of UTF-8.
+    for enc in ("utf-8-sig", "cp950"):
+        try:
+            return pd.read_csv(path, dtype=str, encoding=enc)
+        except UnicodeDecodeError:
+            continue
+    raise ValueError(f"Cannot decode {path}; save it as UTF-8 CSV.")
+
+
+def _to_number(series: pd.Series) -> pd.Series:
+    return pd.to_numeric(series.str.replace(",", "", regex=False).str.strip(), errors="coerce")
+
+
+def load_prices_from_csv(path: Path, price_col: str | None = None) -> pd.DataFrame:
+    """Load prices from a wide CSV (Date + one column per ticker) or a TEJ-style long CSV.
+
+    Long format has one row per (security, date): a date column, a security-code
+    column, and a price column (pass --price-col, or it picks a column whose name
+    contains 調整 / adj).
+    """
+    df = _read_csv_text(path)
+    df.columns = [str(c).strip() for c in df.columns]
+    date_col = next((c for c in df.columns if c.lower() in ("date", "mdate") or c in ("年月日", "日期")), None)
+    id_col = next(
+        (c for c in df.columns if c.lower() in ("coid", "ticker", "symbol") or c in ("證券代碼", "證券碼", "代號", "公司")),
+        None,
+    )
+    if date_col and id_col:
+        price_col = price_col or next((c for c in df.columns if "調整" in c or "adj" in c.lower()), None)
+        if price_col is None or price_col not in df.columns:
+            raise ValueError(f"Pass --price-col with one of: {list(df.columns)}")
+        long = pd.DataFrame(
+            {
+                "Date": pd.to_datetime(df[date_col].str.strip()),
+                "id": df[id_col].str.strip(),
+                "price": _to_number(df[price_col]),
+            }
+        )
+        prices = long.pivot_table(index="Date", columns="id", values="price", aggfunc="last")
+    else:
+        prices = df.set_index(df.columns[0])
+        prices.index = pd.to_datetime(prices.index.str.strip())
+        prices = prices.apply(_to_number)
     prices.index.name = "Date"
+    prices.columns.name = None
     return prices
 
 
@@ -119,6 +162,7 @@ def summary_stats(returns: pd.DataFrame) -> pd.DataFrame:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", type=Path, default=None, help="Path to a local CSV of Adjusted Close prices instead of downloading")
+    parser.add_argument("--price-col", default=None, help="Price column name when --csv is a long-format file (e.g. TEJ export)")
     parser.add_argument("--start", default=START_DATE)
     parser.add_argument("--end", default=END_DATE)
     args = parser.parse_args()
@@ -127,7 +171,7 @@ def main() -> None:
     out_dir.mkdir(exist_ok=True)
 
     if args.csv:
-        prices = load_prices_from_csv(args.csv)
+        prices = load_prices_from_csv(args.csv, args.price_col)
     else:
         try:
             prices = download_prices(list(ASSETS.keys()), args.start, args.end)
