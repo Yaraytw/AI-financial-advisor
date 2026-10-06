@@ -70,6 +70,8 @@ def download_prices(tickers: list[str], start: str, end: str | None) -> pd.DataF
 
 
 def _read_csv_text(path: Path) -> pd.DataFrame:
+    if path.suffix.lower() in (".xlsx", ".xls"):
+        return pd.read_excel(path, dtype=str)
     # Taiwan data exports are often Big5 (cp950) instead of UTF-8.
     for enc in ("utf-8-sig", "cp950"):
         try:
@@ -88,7 +90,7 @@ def load_prices_from_csv(path: Path, price_col: str | None = None) -> pd.DataFra
 
     Long format has one row per (security, date): a date column, a security-code
     column, and a price column (pass --price-col, or it picks a column whose name
-    contains 調整 / adj).
+    contains 調整 / adj / 收盤價). .xlsx files work too.
     """
     df = _read_csv_text(path)
     df.columns = [str(c).strip() for c in df.columns]
@@ -98,7 +100,9 @@ def load_prices_from_csv(path: Path, price_col: str | None = None) -> pd.DataFra
         None,
     )
     if date_col and id_col:
-        price_col = price_col or next((c for c in df.columns if "調整" in c or "adj" in c.lower()), None)
+        price_col = price_col or next(
+            (c for c in df.columns if "調整" in c or "adj" in c.lower() or "收盤價" in c), None
+        )
         if price_col is None or price_col not in df.columns:
             raise ValueError(f"Pass --price-col with one of: {list(df.columns)}")
         long = pd.DataFrame(
@@ -161,7 +165,7 @@ def summary_stats(returns: pd.DataFrame) -> pd.DataFrame:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--csv", type=Path, default=None, help="Path to a local CSV of Adjusted Close prices instead of downloading")
+    parser.add_argument("--csv", type=Path, nargs="+", default=None, help="Path to a local CSV of Adjusted Close prices instead of downloading")
     parser.add_argument("--price-col", default=None, help="Price column name when --csv is a long-format file (e.g. TEJ export)")
     parser.add_argument("--start", default=START_DATE)
     parser.add_argument("--end", default=END_DATE)
@@ -171,7 +175,8 @@ def main() -> None:
     out_dir.mkdir(exist_ok=True)
 
     if args.csv:
-        prices = load_prices_from_csv(args.csv, args.price_col)
+        prices = pd.concat([load_prices_from_csv(f, args.price_col) for f in args.csv], axis=1)
+        prices = prices.loc[:, ~prices.columns.duplicated()]
     else:
         try:
             prices = download_prices(list(ASSETS.keys()), args.start, args.end)
