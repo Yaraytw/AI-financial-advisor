@@ -37,7 +37,7 @@ ASSETS = {
     "VWO": "Emerging Markets Equity ETF",
     "0050.TW": "Taiwan Top 50 Equity ETF (Yuanta/P-shares)",
     "AGG": "US Aggregate Bond ETF",
-    "00679B.TW": "Taiwan-listed 20+ Year US Treasury Bond ETF",
+    "00679B.TWO": "Taiwan-listed 20+ Year US Treasury Bond ETF",
     "GLD": "Gold ETF",
     "VNQ": "US REIT ETF",
     "DBC": "Broad Commodity ETF",
@@ -52,12 +52,18 @@ def download_prices(tickers: list[str], start: str, end: str | None) -> pd.DataF
     import yfinance as yf
 
     frames = {}
+    failed = []
     for ticker in tickers:
         data = yf.download(ticker, start=start, end=end, auto_adjust=False, progress=False)
         if data.empty:
-            raise RuntimeError(f"No data returned for {ticker}")
+            failed.append(ticker)
+            continue
         adj = data["Adj Close"]
         frames[ticker] = adj.iloc[:, 0] if isinstance(adj, pd.DataFrame) else adj
+    if failed:
+        print(f"WARNING: no data for {failed}; continuing without them.", file=sys.stderr)
+    if len(frames) < 5:
+        raise RuntimeError(f"Only {len(frames)} assets downloaded; the assignment needs at least 5.")
     prices = pd.DataFrame(frames)
     prices.index.name = "Date"
     return prices

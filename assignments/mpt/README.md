@@ -12,7 +12,7 @@ coursework, not a product feature.
 | VWO          | Emerging Markets Equity ETF                    |
 | 0050.TW      | Taiwan Top 50 Equity ETF (Yuanta/P-shares)     |
 | AGG          | US Aggregate Bond ETF                          |
-| 00679B.TW    | Taiwan-listed 20+ Year US Treasury Bond ETF    |
+| 00679B.TWO   | Taiwan-listed 20+ Year US Treasury Bond ETF    |
 | GLD          | Gold ETF                                       |
 | VNQ          | US REIT ETF                                    |
 | DBC          | Broad Commodity ETF                            |
