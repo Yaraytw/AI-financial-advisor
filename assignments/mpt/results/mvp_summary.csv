@@ -1,0 +1,4 @@
+,Expected return,Volatility
+Closed-form MVP (shorting allowed),0.07671178236438266,0.07474299805421168
+Long-only MVP,0.08153666249970619,0.0752843929528525
+"Lowest-vol of 10,000 random portfolios",0.08362458379424328,0.07606798220556253
