@@ -21,8 +21,9 @@ Period: 2019-01-02 to 2026-10-05 (1,883 trading days). Price field: the
 `收盤價(元)` column of TEJ's 調整股價(日)-除權息調整 table (adjusted for
 dividends and splits).
 
-TEJ data is licensed for campus use, so `data/` and `output/` are gitignored
-and nothing derived from raw prices is committed.
+TEJ data is licensed for campus use, so the raw exports in `data/` and the
+working folder `output/` are gitignored. The raw prices are not committed; the
+derived results needed for grading are in `results/` (see below).
 
 ## Setup
 
@@ -73,3 +74,14 @@ mean daily return x 252 (so portfolio return is linear in the weights), risk is
 
 Outputs in `output/`: `opportunity_set.png`, `mvp_weights.csv`,
 `mvp_summary.csv`, `efficient_frontier.csv`, `portfolios_simulated.csv`.
+
+## Results and answers
+
+- [`ANSWERS.md`](ANSWERS.md): per-asset return and risk table, Q1 to Q3 answers,
+  MVP weights and the opportunity set discussion (in Chinese).
+- [`results/`](results/): the output files the answers are based on
+  (`summary_stats.csv`, `return_matrix.csv`, `correlation_matrix.csv`,
+  `correlation_pairs_ranked.csv`, `covariance_matrix.csv`,
+  `covariance_matrix_annualized.csv`, `mvp_weights.csv`, `mvp_summary.csv`,
+  `efficient_frontier.csv`, `opportunity_set.png`). They are a copy of what the
+  scripts write to `output/`.
