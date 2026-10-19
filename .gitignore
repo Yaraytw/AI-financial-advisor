@@ -231,3 +231,4 @@ assignments/mpt/output/*
 !assignments/mpt/output/.gitkeep
 assignments/hw3/data/
 assignments/hw3/output/
+assignments/hw3/*.zip
