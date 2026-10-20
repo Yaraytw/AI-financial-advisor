@@ -1,0 +1,8 @@
+pandas
+numpy
+scipy
+matplotlib
+reportlab
+pillow
+openpyxl
+yfinance
